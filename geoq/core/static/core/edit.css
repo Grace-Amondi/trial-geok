@@ -1,0 +1,394 @@
+h4 {
+    margin: 0px;
+}
+#map {
+    position: relative;
+    top: -20px;
+    left: 0px;
+    margin-left: 0px;
+    cursor: crosshair;
+}
+div.alert {
+  position: absolute;
+  top: 100px;
+  width: 300px;
+  left: 50px;
+  z-index: 1000;
+}
+
+.aoi-status {
+    font-size: 18px;
+}
+#layer_info_drawer {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 300px;
+    padding-top: 50px;
+    margin-left: -300px;
+}
+.gray-header {
+    padding: 3px 7px;
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #9da0a4;
+    -webkit-border-radius: 4px 0 4px 0;
+    -moz-border-radius: 4px 0 4px 0;
+    border-radius: 4px 0 4px 0;
+}
+
+#filter_bar_drawer {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 300px;
+    background-color: lightblue;
+    padding-top: 50px;
+    margin-left: -300px;
+}
+
+#aoi-status-box {
+    max-height: 64px;
+    cursor: pointer;
+    overflow-y: hidden;
+}
+
+#tag_list_box {
+    margin-bottom: 0;
+    width: 78px;
+    font-size: 10px;
+    line-height: 14px;
+    height: 14px;
+    text-align: right;
+}
+
+form.leaflet-control-geocoder-form {
+    margin: 0;
+}
+form.leaflet-control-geocoder-form > input[type="text"] {
+    margin-bottom: 0;
+}
+
+div.leaflet-control-button.leaflet-control {
+    font: 14px/16px Arial, Helvetica, sans-serif;
+    background: white;
+    background: rgba(255,255,255,0.8);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 5px;
+}
+
+div.leaflet-control-button.leaflet-control > div > h4 {
+    background-color: transparent;
+    border: solid black 1px;
+    border-radius: 4px;
+    padding: 6px;
+}
+
+#aoi-submit {
+    background-color: hsl(203, 100%, 30%) !important;
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#009dff", endColorstr="#005e99");
+    background-image: -khtml-gradient(linear, left top, left bottom, from(#009dff), to(#005e99));
+    background-image: -moz-linear-gradient(top, #009dff, #005e99);
+    background-image: -ms-linear-gradient(top, #009dff, #005e99);
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #009dff), color-stop(100%, #005e99));
+    background-image: -webkit-linear-gradient(top, #009dff, #005e99);
+    background-image: -o-linear-gradient(top, #009dff, #005e99);
+    background-image: linear-gradient(#009dff, #005e99);
+    border-color: #005e99 #005e99 hsl(203, 100%, 25%);
+    color: #fff !important;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.33);
+    -webkit-font-smoothing: antialiased;
+}
+
+ul.fancytree-container {
+    max-width: 280px;
+}
+
+#drawer_tray_top {
+}
+.status_block {
+    width: 130px;
+    display: inline-block;
+}
+#drawer_tray_bottom {
+    font-size: 10px;
+}
+.drawer_tray {
+    border: 1px dotted gray;
+}
+.editable {
+    color: blue;
+}
+
+.tight {
+    width: 20;
+}
+
+#add_layer_button {
+    margin-left: 23px;
+}
+.inner-padding {
+    padding: 5px;
+}
+
+.scroll-link {
+    font-size: .7em;
+    max-height: 20px;
+    overflow-x: scroll;
+    display: inline-block;
+    background-color: aliceblue;
+}
+.hide {
+    display: none;
+}
+.linked-item {
+    font-size: 10px;
+    line-height: 1.1em;
+    background-color: #eef;
+    margin: 1px;
+    border: solid black 1px;
+    width: 120px;
+    padding: 2px;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+#messages {
+    font-size: 12px;
+}
+
+#message_scroll {
+    height: 300px;
+    overflow-y: scroll;
+}
+
+#button_row {
+    padding-top: 10px;
+}
+
+#finish-workcell {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.popover {
+    min-width: 200px ! important;
+}
+
+.dropdown-menu {
+    top: 93%;
+}
+
+.leaflet-map-pane {
+    z-index: 2 !important;
+}
+
+.leaflet-google-layer {
+    z-index: 1 !important;
+}
+
+
+#roseHolder {
+    text-align: center;
+    font-weight: bold;
+}
+#roseHolder img {
+    vertical-align: middle;
+    padding-left: .25em;
+}
+#roseHolder span {
+    cursor: pointer;
+}
+
+
+/*Tailored inputs for the footprint plugin*/
+input.accept[type=radio]{
+    /* Hide original inputs */
+    visibility: hidden;
+    position: absolute;
+}
+input.reject[type=radio]{
+    /* Hide original inputs */
+    visibility: hidden;
+    position: absolute;
+}
+input.accept[type=radio] + label:before{
+    height:9px;
+    width:9px;
+    margin-right: 2px;
+    content: " ";
+    display:inline-block;
+    vertical-align: baseline;
+    border:1px solid #777;
+    background:#ccffcc;
+}
+input.reject[type=radio] + label:before{
+    height:9px;
+    width:9px;
+    margin-right: 2px;
+    content: " ";
+    display:inline-block;
+    vertical-align: baseline;
+    border:1px solid #777;
+    background:#ffcccc;
+}
+input.accept[type=radio]:checked + label:before{
+    background:green;
+}
+input.reject[type=radio]:checked + label:before{
+    background:red;
+}
+input + label {
+    display:inline-block;
+}
+
+.query-builder, .query-builder * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.query-builder {
+    font-family: sans-serif;
+}
+
+.query-builder .pull-right {
+    float: right !important;
+}
+
+.query-builder .btn {
+    text-transform: none;
+    display: inline-block;
+    padding: 6px 12px;
+    margin-bottom: 0px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    touch-action: manipulation;
+    cursor: pointer;
+    user-select: none;
+    background-image: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.query-builder .btn.focus, .query-builder .btn:focus, .query-builder .btn:hover {
+    color: #333;
+    text-decoration: none;
+}
+
+.query-builder .btn.active, .query-builder .btn:active {
+    background-image: none;
+    outline: 0px none;
+    box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.125) inset;
+}
+
+.query-builder .btn-success {
+    color: #FFF;
+    background-color: #5CB85C;
+    border-color: #4CAE4C;
+}
+
+.query-builder .btn-primary {
+    color: #FFF;
+    background-color: #337AB7;
+    border-color: #2E6DA4;
+}
+
+.query-builder .btn-danger {
+    color: #FFF;
+    background-color: #D9534F;
+    border-color: #D43F3A;
+}
+
+.query-builder .btn-success.active, .query-builder .btn-success.focus,
+.query-builder .btn-success:active, .query-builder .btn-success:focus,
+.query-builder .btn-success:hover {
+    color: #FFF;
+    background-color: #449D44;
+    border-color: #398439;
+}
+
+.query-builder .btn-primary.active, .query-builder .btn-primary.focus,
+.query-builder .btn-primary:active, .query-builder .btn-primary:focus,
+.query-builder .btn-primary:hover {
+    color: #FFF;
+    background-color: #286090;
+    border-color: #204D74;
+}
+
+.query-builder .btn-danger.active, .query-builder .btn-danger.focus,
+.query-builder .btn-danger:active, .query-builder .btn-danger:focus,
+.query-builder .btn-danger:hover {
+    color: #FFF;
+    background-color: #C9302C;
+    border-color: #AC2925;
+}
+
+.query-builder .btn-group {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.query-builder .btn-group > .btn {
+    position: relative;
+    float: left;
+}
+
+.query-builder .btn-group > .btn:first-child {
+    margin-left: 0px;
+}
+
+.query-builder .btn-group > .btn:first-child:not(:last-child) {
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+
+.query-builder .btn-group > .btn:last-child:not(:first-child) {
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+
+.query-builder .btn-group .btn + .btn, .query-builder .btn-group .btn + .btn-group,
+.query-builder .btn-group .btn-group + .btn, .query-builder .btn-group .btn-group + .btn-group {
+    margin-left: -1px;
+}
+
+.query-builder .btn-xs, .query-builder .btn-group-xs > .btn {
+    padding: 1px 5px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 3px;
+}
+
+.query-builder .form-control {
+    width: auto;
+}
+
+.query-builder input[type=text] {
+    width: 50%;
+}
+
+table.hover-highlight td:before,
+table.focus-highlight td:before {
+    background: #fff;
+}
+
+.focus-highlight td:focus::before, .focus-highlight th:focus::before {
+    background-color: lightblue;
+}
+
+.focus-highlight td:focus::after, .focus-highlight th:focus::after {
+    background-color: lightblue;
+}
+
+.navbar-geok{
+    color:#1a56bb;
+}

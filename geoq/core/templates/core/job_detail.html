@@ -1,0 +1,472 @@
+{% extends "core/base.html" %}
+{% load compress %}
+{% load leaflet_tags %}
+{% load geoserver_job_link %}
+{% block title %}GeoK Job: {{ object.name }}{% endblock %}
+{% block static_libraries %}
+    {% leaflet_js %}
+    <script src="{{ STATIC_URL }}core/js/leaflet_helper.js"></script>
+    <script src="{{ STATIC_URL }}bootstrap/js/bootstrap-dialog.js"></script>
+    <script src="{{ STATIC_URL }}core/js/maths.js"></script>
+    <script src="{{ STATIC_URL }}core/js/leafletcontrols/leaflet.simple_button.js"></script>
+    <script src="{{ STATIC_URL }}leaflet/L.Control.Button.js"></script>
+    <script type="text/javascript">
+
+        var map_object;
+        var runningAverage = 0;
+        var timeToCompletion = 0;
+        var map_toggle=false;
+        var selected_workcell;
+
+        var status_colors = [
+            {name:'Assigned', color: leaflet_helper.styles.assigned, slug:'assigned'},  //TODO: Are we still using 'Assigned'?
+            {name:'Completed', color: leaflet_helper.styles.completed, slug:'completed'},
+            {name:'In work', color: leaflet_helper.styles.in_work, slug:'in-work'},
+            {name:'In review', color: leaflet_helper.styles.in_review, slug:'in-review'},
+            {name:'Awaiting review', color: leaflet_helper.styles.awaiting_review, slug:'awaiting-review'},
+            {name:'Unassigned', color: leaflet_helper.styles.extentStyle, slug:'unassigned'}
+        ];
+
+        var aoi_extents;
+        function mapInit(map, bounds) {
+            map_object = map;
+          	/*
+          		The Map_object is not consistant with the css that is rendering the map on the intial loading and what the CSS looks like on refresh. 
+          		Changing these two values creates a consistant mapsize between all states. This may want to be looked into eventually.
+          	*/
+
+          	map_object._size.y = 193;
+          	map_object._zoom = 12;
+          	count = 0;
+            aoi_extents = L.geoJson({{ object.geoJSON|default:'[]'|safe }}, {
+                style: function(feature) {
+                    var status = _.find(status_colors,function(stat){return stat.name==feature.properties.status});
+                    return (status && status.color) ? status.color : '#ffffff';
+                },
+                onEachFeature: function(feature, layer) {
+
+                    if (feature["properties"]["time"]["in_work"] != "None" && feature["properties"]["time"]["finished"] != "None") {
+                        console.log(feature);
+                        startedDate = new Date(feature["properties"]["time"]["in_work"]);
+                        finishedDate = new Date(feature["properties"]["time"]["finished"]);
+                        var hours = Math.abs(startedDate - finishedDate) / 36e5;
+
+                        runningAverage = ((runningAverage * count) + hours) / (count+1);
+                        count++;
+
+                      	timeToCompletion = runningAverage * ( {{object.aoi_count}} - count);	
+                      
+                    }
+
+
+                    job_properties = feature.properties;
+                    {% if user.is_authenticated %}
+                    var popupContent = _.template('{% filter escapejs %}{% include "core/job_detail_aoi_popup.html" %}{% endfilter %}', job_properties);
+                    layer.bindPopup(popupContent);
+                    {% endif %}
+
+                    layer.on({
+                        mouseover: highlightFeature,
+                        mouseout: resetHighlight,
+                        click: cellClick,
+                        popupopen: recenter
+                    });
+                }
+            }).addTo(map);
+
+            // Map doesn't update without this delay.
+            setTimeout(function(){
+                try {
+                    //AOI is sometimes getting no bounds data, which causes error
+                    var test = aoi_extents.getBounds().getCenter();
+                    map.fitBounds(aoi_extents.getBounds());
+                } catch(ex){
+                    log.error("aoi_extents not being passed in valid bounds");
+                }
+            }, 1);
+
+
+            var drawnItems = new L.FeatureGroup();
+    		map.addLayer(drawnItems);
+
+            configurePageUI();
+
+            //Add Fullscreen button
+            var $title = $("<a>")
+                .addClass("btn")
+                .text("Fullscreen")
+                .on('click',function(){
+                    map_toggle = !map_toggle;
+
+                    if (map_toggle) {
+                        $('#attribute-table').hide();
+                        $('#map').css({width:'100%', height:'800px'});
+                        $title.text("Job Details");
+                    } else {
+                        $('#attribute-table').show();
+                        $('#map').css({height:'290px', width: '400px'})
+                        $title.text("Fullscreen");
+                    }
+
+                    setTimeout(function(){
+                        map_object.invalidateSize();
+
+                        try {
+                            //AOI is sometimes getting no bounds data, which causes error
+                            var test = aoi_extents.getBounds().getCenter();
+                            map.fitBounds(aoi_extents.getBounds());
+                        } catch(ex){
+                        }
+
+                    },500);
+
+
+                });
+            var titleInfoOptions = {
+                'html': $title,  // string
+                'hideText': false,  // bool
+                position: 'topright',
+                'maxWidth': 60,  // number
+                'doToggle': false,  // bool
+                'toggleStatus': false  // bool
+            };
+            var titleInfoButton = new L.Control.Button(titleInfoOptions).addTo(map);
+
+            leaflet_helper.addLayerControl(map);
+
+        }
+
+        function highlightFeature(e) {
+            var layer = e.target;
+            layer.setStyle({
+                color: 'black',
+                weight: 3,
+                opacity: 1,
+                fillOpacity:.3,
+                fillColor: 'gray'
+            });
+        }
+
+       function recenter(e) {
+        	
+            var px = map_object.project(e.popup._latlng);
+   
+            px.y -= (e.popup._container.clientHeight/2);
+            map_object.panTo(map_object.unproject(px),{animate: true});
+        }
+     
+
+        function resetHighlight(e) {
+            aoi_extents.resetStyle(e.target);
+        }
+
+        function cellClick(e) {
+            selected_workcell = e.target;
+        }
+
+        function deleteAOI(id, delete_url) {
+            BootstrapDialog.confirm('Delete AOI # ' + id + '?',
+                    function(result) {
+                        if (result) {
+                            $.ajax({
+                                url: delete_url,
+                                type: 'GET',
+                                success: function(data) {
+                                    window.location.reload();
+                                },
+                                failure: function() { log.error('failed');}
+                            })
+                        }
+                    }
+            );
+        }
+
+        function updatePriority(id, select) {
+            var value=select.value;
+            console.log("id: " + id + " and value " + value);
+            if (id && select.value) {
+                $.ajax({
+                    url: "{% url 'home' %}" + "aois/update-priority/" + id,
+                    type: 'POST',
+                    data: 'priority=' + value,
+                    success: function(data) {
+
+                    },
+                    failure: function() {
+                        // let them know it failed
+                        console.log("Error updating priority");
+                    }
+                }).done( function (msg) {
+                    // make sure popup is set to this value in GUI
+                    resetPopup(value);
+                });
+            }
+
+        }
+
+        function resetPopup(value) {
+            if (selected_workcell && value) {
+                var popupContent = selected_workcell._popupContent;
+                popupContent = popupContent.replace(' selected="selected"', '');
+                popupContent = popupContent.replace('value="' + value + '"', 'value="' + value + '" selected="selected"');
+                selected_workcell.bindPopup(popupContent);
+            }
+        }
+
+        function configurePageUI () {
+            //Color tabs with same colors as features
+            _.each(status_colors, function(stat){
+                var tab_name = '#tab_'+stat.slug;
+                var $tab = $(tab_name);
+                var bg_color = (stat.color) ? stat.color.fillColor : '';
+                bg_color = bg_color || '#ffffff';
+                var color = maths.idealTextColor(bg_color);
+
+                if ($tab.length && bg_color) {
+                    $tab.css({backgroundColor:bg_color, color:color});
+                }
+            });
+
+            //var hours = timeToCompletion % 24;
+            document.getElementById("TTC").innerHTML = "Days: " + Math.floor(timeToCompletion / 24) + " Hours: " + Math.round((timeToCompletion % 24) * 100) / 100;
+
+        };
+
+    var map_layers = {{ object.map.to_json|safe|default:"{}" }};
+
+    $(document).ready(function(){
+        var $att = $('#attribute-table');
+        var $map = $('#map');
+        var height = $att.height();
+        $map.height(height);
+        $att.css('marginBottom','20px');
+    });
+
+    </script>
+    <style>
+        .nav.nav-tabs li a {
+            border: 1px solid gray;
+        }
+        li.active {
+            font-weight: bold;
+        }
+        li.active > a {
+            border-color: black;
+        }
+    </style>
+    {% compress css %}
+    {% leaflet_css %}
+    <link href="{{ STATIC_URL }}core/less/geoq.less" media="all" rel="stylesheet" type="text/less" />
+{% endcompress %}
+{% endblock %}
+
+{% block container %}
+    <div class="row-fluid container-narrow">
+
+        <div class="projectlist">
+
+            {% include 'core/_job_page.html' %}
+
+            <h3>
+                <span class="icon-inbox icon-1x pull-left list-icon"></span>
+                <span class="title header">
+                    <a href="{%url 'job-detail' object.id %}">{{ object.name }}</a>
+                </span>
+            </h3>
+
+            <p class="body project-description">
+                <b>Job Details:</b>
+
+            <div class="description_body">
+                {{ object.description }}
+
+            </div>
+            </p>
+            <script type="text/javascript">
+             console.log("Job testing");
+             $( document ).ready(function() {
+                  var showChar = 300;  // How many characters are shown by default
+                  var ellipses_text = "..."; //used to show where content is truncated
+                  var more_text = "<br/>Show more >"; //show more link
+                  var less_text = "<br/>Show less"; //show less link
+
+                    //goes through the description
+                    $('.description_body').each(function() {
+                        var content = $(this).html(); //gets the description body
+
+                        //if the description length is more than the max char number
+                        if(content.length > showChar) {
+
+                            //stores the new, smaller content
+                            var less_content = content.substr(0, showChar);
+
+                            //stores what is cut off
+                            var cutoff_content = content.substr(showChar, content.length - showChar);
+
+                            //causes only the less_content to be visible and makes the rest hidden
+                            var html = less_content + '<span class="more_ellipses">' + ellipses_text+ '&nbsp;</span><span class="more_content"><span>' + cutoff_content + '</span>&nbsp;&nbsp;<a href="" class="more_link">' + more_text + '</a></span>';
+
+                            //appends new html
+                            $(this).html(html);
+                        }
+
+                    });
+
+                    $(".more_link").click(function(){
+
+                        //if less content is being shown, then show more
+                        if($(this).hasClass("less")) {
+                            $(this).removeClass("less");
+                            $(this).html(more_text);
+
+                         //else the full content is being shown, so show less
+                        } else {
+                            $(this).addClass("less");
+                            $(this).html(less_text);
+                        }
+                        //toggles between the two stages
+                        $(this).parent().prev().toggle();
+                        $(this).prev().toggle();
+                        return false;
+                    });
+
+             });
+
+
+            </script>
+
+            <div class="row body" style="height:250px; margin-top:25px; margin-left:5px;">
+                <div class="span4 thumbnail" id="map" style="height:290px; margin-left: 0px; width: 400px;">
+                {% leaflet_map "map" creatediv=False%}
+                </div>
+                <div class="span6" id="attribute-table" style="float:left">
+
+                {% if 'core.change_aoi' in request.base_perms %}
+                <div class="btn-group pull-right">
+                    <a class="btn btn-mini" href="{{ object.get_update_url }}">
+                        <b> Edit Job </b>
+                    </a>
+                    <button class="btn btn-mini dropdown-toggle" data-toggle="dropdown">
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% if 'core.add_job' in request.base_perms %}
+                        <li><a href="{% url 'job-create-aois' object.id%}">Create Workcells</a></li>
+                        {% endif %}
+                        {% if 'core.add_job' in request.base_perms %}
+                        <li><a href="{% url 'job-prioritize-workcells' object.id %}">Prioritize Workcells</a></li>
+                        {% endif %}
+                        {% if 'core.assign_workcells' in request.base_perms %}
+                        <li><a href="{% url 'job-assign-workcells' object.id%}">Assign Workcells</a></li>
+                        {% endif %}
+                        {% if 'core.delete_job' in request.base_perms %}
+                        <li><a href="{% url 'job-delete' object.id %}">Delete Job</a></li>
+                        {% endif %}
+                        {% if 'core.change_job' in request.base_perms and object.map%}
+                        <li><a href="{% url 'map-update' object.id object.map.id %}">Edit Map</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                    <table style="clear: both">
+                        <tr>
+                            <th style="min-width: 100px"></th>
+                            <th></th>
+                        </tr>
+                        <tr>
+                            <td style="vertical-align: top;">
+                                <b>Project:</b>
+                            </td>
+                            <td>
+                                <a href="{{ object.project.get_absolute_url }}">{{ object.project.name }}</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <b>Created:</b>
+                            </td>
+                            <td>
+                                {{ object.created_at }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <b>Editor:</b>
+                            </td>
+                            <td>
+                                {{ object.editor }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <b>Project Type:</b>
+                            </td>
+                            <td>
+                                {{ object.project.project_type }}
+                            </td>
+                        </tr>
+                    {% if object.project.private %}
+                        <tr>
+                            <td>
+                                <b>Private:</b>
+                            </td>
+                            <td>
+                                {{ object.project.private }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                        <tr>
+                            <td style="vertical-align: top;">
+                                <b>Description:</b>
+                            </td>
+                            <td>
+                                {{ object.project.description }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="vertical-align: top;">
+                                <b>Est. Comp: </b>
+                            </td>
+                            <td>
+                                <p id="TTC"></p>
+                            </td>
+                        </tr>
+                        {% include 'core/_job_links.html' %}
+                    </table>
+                </div>
+            </div>
+
+            <div class="row body" style="margin-left: 5px;">
+                <ul class="nav nav-tabs" style="float:left; width:100%;">
+                    {% for status in statuses %}
+                        {% with status=status|lower %}
+                    <li {% if status == active_status %}class="active"{% endif %}>
+                        <a id="tab_{{ status|slugify }}" href="{{ object.get_absolute_url }}{{ status }}">{{ status|title }}</a>
+                    </li>
+                        {% endwith %}
+                    {% endfor %}
+                    <li>
+                        <a id="tab_metrics" href="{{ metrics_url }}">Interactive Metrics</a>
+                    </li>
+
+                </ul>
+            </div>
+
+        {% if not workcell_count %}
+            <div class="row body" style="margin-left: 5px;">
+            {% if 'accounts.add_job' in request.base_perms %}
+                <span><b>No workcells. Next step: </b> <a class="btn btn-large btn-success" href="{% url 'job-create-aois' job_pk=object.id %}">Create workcells</a></span>
+            {% else %}
+                <span><b>This job doesn't have any workcells yet, please ask a supervisor to create some</b></span>
+            {% endif %}
+            </div>
+        {% endif %}
+
+            {% include "core/_object_list.html" %}
+
+        </div>
+
+    </div>
+{% endblock %}
+
